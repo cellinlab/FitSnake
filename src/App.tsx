@@ -179,8 +179,34 @@ function App() {
               console.log('🎯 [姿态检测] 重置姿态状态为none');
             }, 1000);
             
+            const currentGameState = gameEngineRef.current.getState();
+            
+            // 如果游戏结束，则重启游戏
+            if (currentGameState.gameOver) {
+              gameEngineRef.current.startGame();
+              setState(prev => ({
+                ...prev,
+                gameStartTime: Date.now(),
+                gameStats: {
+                  score: 0,
+                  snakeLength: 1,
+                  gameTime: 0,
+                  movesCount: 0,
+                  foodEaten: 0
+                },
+                fitnessStats: {
+                  leftHandRaises: 0,
+                  rightHandRaises: 0,
+                  leftLegRaises: 0,
+                  rightLegRaises: 0,
+                  totalMoves: 0,
+                  caloriesBurned: 0
+                }
+              }));
+              console.log('🎮 [游戏控制] 游戏结束后通过姿态控制重启游戏');
+            }
             // 如果游戏未开始，则开始游戏
-            if (!gameEngineRef.current.getState().gameStarted) {
+            else if (!currentGameState.gameStarted) {
               gameEngineRef.current.startGame();
               setState(prev => ({ ...prev, gameStartTime: Date.now() }));
               console.log('🎮 [游戏控制] 通过姿态控制启动游戏');

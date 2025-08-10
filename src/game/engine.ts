@@ -57,7 +57,7 @@ export class SnakeEngine {
   }
 
   public setDirection(direction: Direction): void {
-    if (!direction || this.state.gameOver || !this.state.gameStarted) return;
+    if (!direction || !this.state.gameStarted) return;
     
     // 防止反向移动
     const opposites: Record<Direction, Direction> = {
