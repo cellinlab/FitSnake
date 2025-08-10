@@ -63,6 +63,7 @@ function App() {
 
   // 初始化游戏引擎
   useEffect(() => {
+    // 使用默认尺寸初始化，实际尺寸将在GameCanvas中动态设置
     const engine = new SnakeEngine(20, 15);
     gameEngineRef.current = engine;
     setState(prev => ({ ...prev, gameEngine: engine }));

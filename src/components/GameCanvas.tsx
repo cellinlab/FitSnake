@@ -77,6 +77,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       };
       rendererRef.current = new CanvasRenderer(canvas, renderConfig);
       
+      // 同步游戏引擎的网格尺寸
+      gameEngine.updateGridSize(gridConfig.width, gridConfig.height);
+      
       // 初始化游戏引擎的网格配置
       gameEngine.reset();
       

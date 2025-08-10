@@ -151,4 +151,30 @@ export class SnakeEngine {
     this.state = this.createInitialState();
     this.notifyStateChange();
   }
+
+  // 动态更新网格尺寸
+  public updateGridSize(gridWidth: number, gridHeight: number): void {
+    this.gridWidth = gridWidth;
+    this.gridHeight = gridHeight;
+    // 如果游戏正在进行，需要重新生成食物确保在新边界内
+    if (this.state.gameStarted && !this.state.gameOver) {
+      // 检查当前食物是否在新边界内
+      if (this.state.food.x >= gridWidth || this.state.food.y >= gridHeight) {
+        this.state.food = this.generateFood(this.state.snake);
+      }
+      // 检查蛇是否在新边界内，如果不在则游戏结束
+      const outOfBounds = this.state.snake.some(segment => 
+        segment.x >= gridWidth || segment.y >= gridHeight
+      );
+      if (outOfBounds) {
+        this.state.gameOver = true;
+        this.notifyStateChange();
+      }
+    }
+  }
+
+  // 获取当前网格尺寸
+  public getGridSize(): { width: number; height: number } {
+    return { width: this.gridWidth, height: this.gridHeight };
+  }
 }
