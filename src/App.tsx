@@ -59,6 +59,7 @@ function App() {
 
   const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
   const gameEngineRef = useRef<SnakeEngine | null>(null);
+  const poseResetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 初始化游戏引擎
   useEffect(() => {
@@ -69,6 +70,9 @@ function App() {
     return () => {
       if (gameTimerRef.current) {
         clearInterval(gameTimerRef.current);
+      }
+      if (poseResetTimerRef.current) {
+        clearTimeout(poseResetTimerRef.current);
       }
     };
   }, []);
@@ -99,6 +103,20 @@ function App() {
     };
   }, [state.gameStartTime, state.gameEngine?.getState().gameStarted]);
 
+  // Direction到Pose的映射函数
+  const directionToPose = useCallback((direction: Direction): AppState['currentPose'] => {
+    switch (direction) {
+      case 'left': return 'left_hand';
+      case 'right': return 'right_hand';
+      case 'down': return 'left_leg';
+      case 'up': return 'right_leg';
+      default: return 'none';
+    }
+  }, []);
+
+  // 关键点绘制回调函数
+  const [poseDrawCallback, setPoseDrawCallback] = useState<((pose: any) => void) | null>(null);
+
   // 处理摄像头就绪
   const handleVideoReady = useCallback(async (video: HTMLVideoElement) => {
     try {
@@ -111,8 +129,14 @@ function App() {
         video,
         detector,
         (direction: Direction) => {
+          console.log('🎯 [姿态检测] 检测到方向:', direction);
+          
           if (state.gameEngine) {
-            // 更新健身统计
+            // 映射direction到currentPose
+            const newPose = directionToPose(direction);
+            console.log('🎯 [姿态检测] 映射到姿态:', newPose);
+            
+            // 更新健身统计和currentPose状态
             setState(prev => {
               const newStats = { ...prev.fitnessStats };
               
@@ -136,6 +160,7 @@ function App() {
               
               return {
                 ...prev,
+                currentPose: newPose, // 🔧 添加currentPose状态更新
                 fitnessStats: newStats,
                 gameStats: {
                   ...prev.gameStats,
@@ -143,6 +168,15 @@ function App() {
                 }
               };
             });
+            
+            // 🔧 添加状态重置机制：1秒后重置currentPose为'none'
+            if (poseResetTimerRef.current) {
+              clearTimeout(poseResetTimerRef.current);
+            }
+            poseResetTimerRef.current = setTimeout(() => {
+              setState(prev => ({ ...prev, currentPose: 'none' }));
+              console.log('🎯 [姿态检测] 重置姿态状态为none');
+            }, 1000);
             
             // 如果游戏未开始，则开始游戏
             if (!state.gameEngine.getState().gameStarted) {
@@ -153,12 +187,18 @@ function App() {
             // 设置游戏方向
             state.gameEngine.setDirection(direction);
           }
+        },
+        (pose) => {
+          // 调用关键点绘制回调
+          if (poseDrawCallback) {
+            poseDrawCallback(pose);
+          }
         }
       );
     } catch (error) {
       console.error('姿态检测初始化失败:', error);
     }
-  }, [state.gameEngine]);
+  }, [state.gameEngine, directionToPose, poseDrawCallback]);
 
   // 处理游戏结束
   const handleGameOver = useCallback((score: number) => {
@@ -373,6 +413,7 @@ function App() {
                     <CameraLayer
                       onVideoReady={handleVideoReady}
                       onError={(error) => console.error('摄像头错误:', error)}
+                      onPoseDetected={state.poseDrawCallback}
                       className="w-full h-full object-cover"
                     />
                   </div>

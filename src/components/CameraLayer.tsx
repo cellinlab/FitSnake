@@ -1,21 +1,27 @@
 import React, { useRef, useEffect, useState } from 'react';
+import * as posedetection from '@tensorflow-models/pose-detection';
+import { drawKeypoints } from '../pose/detector';
 
 interface CameraLayerProps {
   onVideoReady?: (video: HTMLVideoElement) => void;
   onError?: (error: string) => void;
+  onPoseDetected?: (pose: posedetection.Pose) => void;
   className?: string;
 }
 
 export const CameraLayer: React.FC<CameraLayerProps> = ({
   onVideoReady,
   onError,
+  onPoseDetected,
   className = ''
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
+  const [showKeypoints, setShowKeypoints] = useState(true);
 
   // 使用useEffect空依赖，只初始化一次
   useEffect(() => {
@@ -194,6 +200,34 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
     };
   }, []); // 空依赖，只运行一次
 
+  // 处理姿态检测结果并绘制关键点
+  useEffect(() => {
+    if (onPoseDetected) {
+      const handlePoseDetected = (pose: posedetection.Pose) => {
+        if (canvasRef.current && videoRef.current && showKeypoints) {
+          const canvas = canvasRef.current;
+          const video = videoRef.current;
+          
+          // 设置canvas尺寸匹配video
+          if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            console.log('📐 [CameraLayer] Canvas尺寸设置为:', { width: canvas.width, height: canvas.height });
+          }
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            drawKeypoints(ctx, pose);
+            console.log('🎨 [CameraLayer] 关键点已绘制');
+          }
+        }
+      };
+      
+      // 将处理函数传递给父组件
+      onPoseDetected(handlePoseDetected as any);
+    }
+  }, [onPoseDetected, showKeypoints]);
+
   const requestPermission = async () => {
     console.log('🔄 [CameraLayer] 用户手动请求摄像头权限...');
     setError(null);
@@ -278,6 +312,15 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
         autoPlay
       />
       
+      {/* Canvas叠加层用于绘制关键点 */}
+      {hasPermission && !error && (
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full pointer-events-none z-10"
+          style={{ transform: 'scaleX(-1)' }} // 与video保持一致的镜像效果
+        />
+      )}
+      
       {/* 错误状态遮罩 */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 bg-opacity-95 text-white z-10">
@@ -345,9 +388,24 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
             </div>
           </div>
           
+          {/* 关键点显示控制 */}
+          <div className="absolute top-4 left-4 pointer-events-auto">
+            <button
+              onClick={() => setShowKeypoints(!showKeypoints)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium backdrop-blur-sm transition-colors ${
+                showKeypoints 
+                  ? 'bg-blue-500 bg-opacity-90 text-white' 
+                  : 'bg-gray-500 bg-opacity-70 text-gray-300'
+              }`}
+            >
+              {showKeypoints ? '🎯 隐藏关键点' : '👁️ 显示关键点'}
+            </button>
+          </div>
+          
           {/* 状态指示器 */}
           <div className="absolute bottom-4 right-4 bg-green-500 bg-opacity-90 text-white px-3 py-2 rounded-lg text-sm font-medium backdrop-blur-sm">
             📹 摄像头已就绪
+            {showKeypoints && <div className="text-xs mt-1">🎯 关键点显示中</div>}
           </div>
         </div>
       )}
