@@ -4,6 +4,7 @@ import { GameCanvas } from './components/GameCanvas';
 import { StatsPanel, MiniStatsOverlay } from './components/StatsPanel';
 import { CapsuleButton, GameControlButton, PoseIndicator } from './components/CapsuleButton';
 import { KeyboardVisualizer } from './components/KeyboardVisualizer';
+import { PoseDirectionVisualizer } from './components/PoseDirectionVisualizer';
 import { SnakeEngine } from './game/engine';
 import { createMoveNetDetector, mapPoseToDirection, startEstimateLoop, Direction } from './pose/detector';
 
@@ -293,142 +294,156 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* 头部 */}
-      <header className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-yellow-400">🐍 FitSnake 燃脂贪吃蛇</h1>
-            <PoseIndicator pose={state.currentPose} />
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <MiniStatsOverlay
-              score={state.gameStats.score}
-              moves={state.fitnessStats.totalMoves}
-              calories={state.fitnessStats.caloriesBurned}
-            />
+      {/* 游戏内容层 */}
+      <div className="min-h-screen">
+        {/* 头部 */}
+        <header className="bg-gray-800 border-b border-gray-700 p-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-yellow-400">🐍 FitSnake 燃脂贪吃蛇</h1>
+              <PoseIndicator pose={state.currentPose} />
+            </div>
             
-            <CapsuleButton
-              variant="secondary"
-              size="sm"
-              onClick={toggleStats}
-              icon={<span>📊</span>}
-            >
-              {state.showStats ? '隐藏' : '统计'}
-            </CapsuleButton>
-            
-            <GameControlButton
-              action="restart"
-              onClick={handleRestart}
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* 主要内容区域 */}
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* 摄像头区域 */}
-          <div className="lg:col-span-1">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-lg font-semibold mb-4 flex items-center">
-                <span className="mr-2">📹</span>
-                姿态识别
-              </h2>
-              <CameraLayer
-                onVideoReady={handleVideoReady}
-                onError={(error) => console.error('摄像头错误:', error)}
-                className="aspect-video rounded-lg overflow-hidden"
+            <div className="flex items-center space-x-4">
+              <MiniStatsOverlay
+                score={state.gameStats.score}
+                moves={state.fitnessStats.totalMoves}
+                calories={state.fitnessStats.caloriesBurned}
               />
               
-              {/* 检测状态 */}
-              <div className="mt-4 text-center">
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                  state.isDetectionActive 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-600 text-gray-300'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full mr-2 ${
-                    state.isDetectionActive ? 'bg-green-300 animate-pulse' : 'bg-gray-400'
-                  }`}></div>
-                  {state.isDetectionActive ? '检测中' : '未激活'}
+              <CapsuleButton
+                variant="secondary"
+                size="sm"
+                onClick={toggleStats}
+                icon={<span>📊</span>}
+              >
+                {state.showStats ? '隐藏' : '统计'}
+              </CapsuleButton>
+              
+              <GameControlButton
+                action="restart"
+                onClick={handleRestart}
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* 主要内容区域 */}
+        <main className="max-w-7xl mx-auto p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* 游戏区域 - 摄像头作为背景 */}
+            <div className={`${state.showStats ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+              {/* 姿态识别和键盘状态 - 横向排列在游戏画面上方 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {/* 姿态识别状态 */}
+                <div className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold flex items-center">
+                      <span className="mr-2">📹</span>
+                      姿态识别
+                    </h3>
+                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                      state.isDetectionActive 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-600 text-gray-300'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                        state.isDetectionActive ? 'bg-green-300 animate-pulse' : 'bg-gray-400'
+                      }`}></div>
+                      {state.isDetectionActive ? '检测中' : '未激活'}
+                    </div>
+                  </div>
+                  <PoseDirectionVisualizer currentPose={state.currentPose} />
+                </div>
+                
+                {/* 键盘可视化 */}
+                <div className="bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg p-3">
+                  <KeyboardVisualizer />
+                </div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-4">
+                <h2 className="text-lg font-semibold mb-4 flex items-center">
+                  <span className="mr-2">🎮</span>
+                  游戏画面
+                </h2>
+                {/* 游戏画面容器 - 相对定位用于层叠 */}
+                <div className="relative aspect-video rounded-lg overflow-hidden">
+                  {/* 摄像头背景层 */}
+                  <div className="absolute inset-0 z-0">
+                    <CameraLayer
+                      onVideoReady={handleVideoReady}
+                      onError={(error) => console.error('摄像头错误:', error)}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  {/* 游戏画面层 - 叠在摄像头上方 */}
+                  <div className="absolute inset-0 z-10">
+                    <GameCanvas
+                      gameEngine={state.gameEngine}
+                      onGameOver={handleGameOver}
+                      className="w-full h-full bg-transparent"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-            
-            {/* 键盘可视化 */}
-            <div className="mt-4">
-              <KeyboardVisualizer />
-            </div>
+
+            {/* 统计面板 */}
+            {state.showStats && (
+              <div className="lg:col-span-1">
+                <div className="bg-gray-800 rounded-lg">
+                  <StatsPanel
+                    gameStats={state.gameStats}
+                    fitnessStats={state.fitnessStats}
+                    isGameActive={state.gameEngine.getState().gameStarted && !state.gameEngine.getState().gameOver}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 游戏区域 */}
-          <div className={`${state.showStats ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-lg font-semibold mb-4 flex items-center">
-                <span className="mr-2">🎮</span>
-                游戏画面
-              </h2>
-              <GameCanvas
-                gameEngine={state.gameEngine}
-                onGameOver={handleGameOver}
-                className="aspect-video"
-              />
+          {/* 游戏说明 */}
+          <div className="mt-8 bg-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">🎯 游戏说明</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h4 className="font-medium mb-2 text-yellow-400">姿态控制</h4>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>🙌 举左手 = 向左移动</li>
+                  <li>🙌 举右手 = 向右移动</li>
+                  <li>🦵 抬左腿 = 向下移动</li>
+                  <li>🦵 抬右腿 = 向上移动</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2 text-blue-400">键盘控制</h4>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>⌨️ W/↑ = 向上移动</li>
+                  <li>⌨️ A/← = 向左移动</li>
+                  <li>⌨️ S/↓ = 向下移动</li>
+                  <li>⌨️ D/→ = 向右移动</li>
+                  <li>⌨️ 空格 = 开始游戏</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium mb-2 text-green-400">游戏目标</h4>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>🍎 吃食物让蛇身变长</li>
+                  <li>💪 通过动作控制燃烧卡路里</li>
+                  <li>🏆 挑战更高分数</li>
+                  <li>⚡ 避免撞墙或撞到自己</li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4 p-4 bg-blue-900 bg-opacity-50 rounded-lg">
+              <p className="text-sm text-blue-200">
+                💡 <strong>提示：</strong>如果摄像头有问题，可以先使用键盘控制（WASD或方向键）来验证游戏逻辑，然后再调试摄像头功能。
+              </p>
             </div>
           </div>
-
-          {/* 统计面板 */}
-          {state.showStats && (
-            <div className="lg:col-span-1">
-              <StatsPanel
-                gameStats={state.gameStats}
-                fitnessStats={state.fitnessStats}
-                isGameActive={state.gameEngine.getState().gameStarted && !state.gameEngine.getState().gameOver}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* 游戏说明 */}
-        <div className="mt-8 bg-gray-800 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">🎯 游戏说明</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h4 className="font-medium mb-2 text-yellow-400">姿态控制</h4>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>🙌 举左手 = 向左移动</li>
-                <li>🙌 举右手 = 向右移动</li>
-                <li>🦵 抬左腿 = 向下移动</li>
-                <li>🦵 抬右腿 = 向上移动</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 text-blue-400">键盘控制</h4>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>⌨️ W/↑ = 向上移动</li>
-                <li>⌨️ A/← = 向左移动</li>
-                <li>⌨️ S/↓ = 向下移动</li>
-                <li>⌨️ D/→ = 向右移动</li>
-                <li>⌨️ 空格 = 开始游戏</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 text-green-400">游戏目标</h4>
-              <ul className="space-y-2 text-sm text-gray-300">
-                <li>🍎 吃食物让蛇身变长</li>
-                <li>💪 通过动作控制燃烧卡路里</li>
-                <li>🏆 挑战更高分数</li>
-                <li>⚡ 避免撞墙或撞到自己</li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-4 p-4 bg-blue-900 bg-opacity-50 rounded-lg">
-            <p className="text-sm text-blue-200">
-              💡 <strong>提示：</strong>如果摄像头有问题，可以先使用键盘控制（WASD或方向键）来验证游戏逻辑，然后再调试摄像头功能。
-            </p>
-          </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

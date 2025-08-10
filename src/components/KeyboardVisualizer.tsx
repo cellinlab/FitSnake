@@ -125,8 +125,8 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({ classNam
     size = 'md' 
   }) => {
     const sizeClasses = {
-      sm: 'w-8 h-8 text-xs',
-      md: 'w-10 h-10 text-sm',
+      sm: 'w-6 h-6 text-xs',
+      md: 'w-12 h-6 text-xs',
       lg: 'w-16 h-8 text-sm'
     };
 
@@ -147,54 +147,45 @@ export const KeyboardVisualizer: React.FC<KeyboardVisualizerProps> = ({ classNam
   };
 
   return (
-    <div className={`bg-gray-800 rounded-lg p-4 border border-gray-700 ${className}`}>
-      <h3 className="text-sm font-semibold text-gray-300 mb-3 text-center">⌨️ 按键状态</h3>
-      
-      {/* WASD 键盘布局 */}
-      <div className="mb-4">
-        <div className="text-xs text-gray-400 mb-2 text-center">WASD</div>
-        <div className="grid grid-cols-3 gap-1 w-fit mx-auto">
-          <div></div>
-          <KeyButton isPressed={keyState.w}>W</KeyButton>
-          <div></div>
-          <KeyButton isPressed={keyState.a}>A</KeyButton>
-          <KeyButton isPressed={keyState.s}>S</KeyButton>
-          <KeyButton isPressed={keyState.d}>D</KeyButton>
-        </div>
-      </div>
+    <div className={`${className}`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center">
+          <span className="mr-2">⌨️</span>
+          按键状态
+        </h3>
+        
+        {/* 横向排列的控制区域 */}
+        <div className="flex items-center space-x-4">
+          {/* WASD 键盘布局 - 紧凑版 */}
+          <div className="flex items-center space-x-2">
+            <div className="text-xs text-gray-400">WASD</div>
+            <div className="grid grid-cols-3 gap-0.5">
+              <div></div>
+              <KeyButton isPressed={keyState.w} size="sm">W</KeyButton>
+              <div></div>
+              <KeyButton isPressed={keyState.a} size="sm">A</KeyButton>
+              <KeyButton isPressed={keyState.s} size="sm">S</KeyButton>
+              <KeyButton isPressed={keyState.d} size="sm">D</KeyButton>
+            </div>
+          </div>
 
-      {/* 方向键布局 */}
-      <div className="mb-4">
-        <div className="text-xs text-gray-400 mb-2 text-center">方向键</div>
-        <div className="grid grid-cols-3 gap-1 w-fit mx-auto">
-          <div></div>
-          <KeyButton isPressed={keyState.up}>↑</KeyButton>
-          <div></div>
-          <KeyButton isPressed={keyState.left}>←</KeyButton>
-          <KeyButton isPressed={keyState.down}>↓</KeyButton>
-          <KeyButton isPressed={keyState.right}>→</KeyButton>
-        </div>
-      </div>
+          {/* 空格键 */}
+          <div className="flex items-center space-x-2">
+            <div className="text-xs text-gray-400">开始</div>
+            <KeyButton isPressed={keyState.space} size="md">SPACE</KeyButton>
+          </div>
 
-      {/* 空格键 */}
-      <div>
-        <div className="text-xs text-gray-400 mb-2 text-center">开始游戏</div>
-        <div className="flex justify-center">
-          <KeyButton isPressed={keyState.space} size="lg">SPACE</KeyButton>
-        </div>
-      </div>
-
-      {/* 状态指示 */}
-      <div className="mt-3 text-xs text-center">
-        <div className={`inline-flex items-center px-2 py-1 rounded-full ${
-          Object.values(keyState).some(Boolean) 
-            ? 'bg-green-600 text-white' 
-            : 'bg-gray-600 text-gray-300'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-            Object.values(keyState).some(Boolean) ? 'bg-green-300 animate-pulse' : 'bg-gray-400'
-          }`}></div>
-          {Object.values(keyState).some(Boolean) ? '按键激活' : '等待输入'}
+          {/* 状态指示 */}
+          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+            Object.values(keyState).some(Boolean) 
+              ? 'bg-green-600 text-white' 
+              : 'bg-gray-600 text-gray-300'
+          }`}>
+            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+              Object.values(keyState).some(Boolean) ? 'bg-green-300 animate-pulse' : 'bg-gray-400'
+            }`}></div>
+            {Object.values(keyState).some(Boolean) ? '激活' : '待机'}
+          </div>
         </div>
       </div>
     </div>

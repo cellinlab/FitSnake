@@ -50,8 +50,14 @@ export class CanvasRenderer {
   }
 
   private clear(): void {
-    this.ctx.fillStyle = this.config.colors.background;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.config.colors.background === 'transparent') {
+      // 清除画布内容，保持透明
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    } else {
+      // 使用背景色填充
+      this.ctx.fillStyle = this.config.colors.background;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
   }
 
   private drawGrid(): void {
@@ -111,7 +117,7 @@ export class CanvasRenderer {
         );
         
         // 蛇头眼睛
-        this.ctx.fillStyle = this.config.colors.background;
+        this.ctx.fillStyle = this.config.colors.background === 'transparent' ? '#000000' : this.config.colors.background;
         const eyeSize = 3;
         const eyeOffset = 6;
         this.ctx.fillRect(x + eyeOffset, y + eyeOffset, eyeSize, eyeSize);

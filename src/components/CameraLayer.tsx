@@ -267,7 +267,7 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ minHeight: '60vh' }}>
+    <div className={`relative ${className}`}>
       {/* 始终渲染video元素 */}
       <video
         ref={videoRef}
@@ -335,8 +335,9 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
       {/* 动作提示叠加层 - 只在摄像头就绪时显示 */}
       {hasPermission && !error && (
         <div className="absolute inset-0 pointer-events-none z-5">
-          <div className="absolute top-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded-lg text-sm">
+          <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white px-4 py-3 rounded-lg text-sm backdrop-blur-sm">
             <div className="space-y-1">
+              <div className="text-yellow-400 font-medium mb-2">🎮 动作控制</div>
               <div>🙌 举左手 = 向左</div>
               <div>🙌 举右手 = 向右</div>
               <div>🦵 抬左腿 = 向下</div>
@@ -345,7 +346,7 @@ export const CameraLayer: React.FC<CameraLayerProps> = ({
           </div>
           
           {/* 状态指示器 */}
-          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-medium">
+          <div className="absolute bottom-4 right-4 bg-green-500 bg-opacity-90 text-white px-3 py-2 rounded-lg text-sm font-medium backdrop-blur-sm">
             📹 摄像头已就绪
           </div>
         </div>

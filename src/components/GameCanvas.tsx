@@ -17,7 +17,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const gameLoopRef = useRef<number | null>(null);
+  const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // 游戏逻辑更新循环
@@ -67,13 +67,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         gridWidth: gridConfig.width,
         gridHeight: gridConfig.height,
         colors: {
-          background: '#1a1a1a',
-          snake: '#4ade80',
-          food: '#f59e0b',
-          grid: '#374151',
-          actionZone: '#3b82f6',
-          text: '#ffffff'
-        }
+            background: 'transparent', // 透明背景
+            snake: '#4ade80',
+            food: '#f59e0b',
+            grid: 'rgba(55, 65, 81, 0.3)', // 半透明网格
+            actionZone: 'rgba(59, 130, 246, 0.3)', // 半透明动作区域
+            text: '#ffffff'
+          }
       };
       rendererRef.current = new CanvasRenderer(canvas, renderConfig);
       
@@ -169,16 +169,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   return (
     <div 
       ref={containerRef}
-      className={`flex items-center justify-center bg-gray-900 ${className}`}
+      className={`flex items-center justify-center ${className}`}
     >
       <div className="relative">
         <canvas
           ref={canvasRef}
-          className="border-2 border-gray-700 rounded-lg shadow-2xl"
+          className="rounded-lg"
           style={{
             imageRendering: 'pixelated', // 保持像素风格
             maxWidth: '100%',
-            maxHeight: '100%'
+            maxHeight: '100%',
+            background: 'transparent' // 透明背景
           }}
         />
         
