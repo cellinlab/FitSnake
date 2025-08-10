@@ -93,7 +93,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (gameLoopRef.current) {
         clearInterval(gameLoopRef.current);
       }
-      gameLoopRef.current = setInterval(gameLoop, 150); // 每150ms更新一次游戏状态
+      gameLoopRef.current = setInterval(gameLoop, 300); // 每300ms更新一次游戏状态，降低游戏难度
     }
   }, [gameEngine, renderLoop]);
 
