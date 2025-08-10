@@ -97,30 +97,31 @@ const KP = (pose: posedetection.Pose) => {
   return map;
 };
 
+// 全局防抖状态 - 修复防抖机制失效问题
+let globalLastDir: Direction = null;
+let globalLastTs = 0;
+let debugFrameCount = 0;
+
 export function mapPoseToDirection(
   pose: posedetection.Pose,
   minScore = 0.4,
   holdMs = 220
 ) {
-  // 方向防抖（闭包外可保存最近一次触发时间戳）
-  let lastDir: Direction = null;
-  let lastTs = 0;
-
   return (now: number): Direction => {
     const k = KP(pose);
     const s = (n: string) => (k[n]?.score ?? 0) >= minScore;
+    
+    debugFrameCount++;
 
-    // 打印关键点信息
-    console.log('🎯 [PoseDetector] 关键点检测:', {
-      right_wrist: k['right_wrist'] ? { x: k['right_wrist'].x.toFixed(2), y: k['right_wrist'].y.toFixed(2), score: k['right_wrist'].score?.toFixed(2) } : 'N/A',
-      right_shoulder: k['right_shoulder'] ? { x: k['right_shoulder'].x.toFixed(2), y: k['right_shoulder'].y.toFixed(2), score: k['right_shoulder'].score?.toFixed(2) } : 'N/A',
-      left_wrist: k['left_wrist'] ? { x: k['left_wrist'].x.toFixed(2), y: k['left_wrist'].y.toFixed(2), score: k['left_wrist'].score?.toFixed(2) } : 'N/A',
-      left_shoulder: k['left_shoulder'] ? { x: k['left_shoulder'].x.toFixed(2), y: k['left_shoulder'].y.toFixed(2), score: k['left_shoulder'].score?.toFixed(2) } : 'N/A',
-      right_knee: k['right_knee'] ? { x: k['right_knee'].x.toFixed(2), y: k['right_knee'].y.toFixed(2), score: k['right_knee'].score?.toFixed(2) } : 'N/A',
-      right_hip: k['right_hip'] ? { x: k['right_hip'].x.toFixed(2), y: k['right_hip'].y.toFixed(2), score: k['right_hip'].score?.toFixed(2) } : 'N/A',
-      left_knee: k['left_knee'] ? { x: k['left_knee'].x.toFixed(2), y: k['left_knee'].y.toFixed(2), score: k['left_knee'].score?.toFixed(2) } : 'N/A',
-      left_hip: k['left_hip'] ? { x: k['left_hip'].x.toFixed(2), y: k['left_hip'].y.toFixed(2), score: k['left_hip'].score?.toFixed(2) } : 'N/A'
-    });
+    // 减少日志噪音：每30帧打印一次关键点信息
+    if (debugFrameCount % 30 === 0) {
+      console.log('🎯 [PoseDetector] 关键点检测 (每30帧):', {
+        right_wrist: k['right_wrist'] ? { y: k['right_wrist'].y.toFixed(0), score: k['right_wrist'].score?.toFixed(2) } : 'N/A',
+        right_shoulder: k['right_shoulder'] ? { y: k['right_shoulder'].y.toFixed(0), score: k['right_shoulder'].score?.toFixed(2) } : 'N/A',
+        left_wrist: k['left_wrist'] ? { y: k['left_wrist'].y.toFixed(0), score: k['left_wrist'].score?.toFixed(2) } : 'N/A',
+        left_shoulder: k['left_shoulder'] ? { y: k['left_shoulder'].y.toFixed(0), score: k['left_shoulder'].score?.toFixed(2) } : 'N/A'
+      });
+    }
 
     // y 越小表示位置越高（相机坐标）
     const upRight = s('right_wrist') && s('right_shoulder') &&
@@ -132,36 +133,39 @@ export function mapPoseToDirection(
     const kneeUpL = s('left_knee') && s('left_hip') &&
                     k['left_knee'].y   < k['left_hip'].y;
 
-    // 打印姿态判断逻辑
-    console.log('🤖 [PoseDetector] 姿态判断:', {
-      upRight: upRight,
-      upLeft: upLeft,
-      kneeUpR: kneeUpR,
-      kneeUpL: kneeUpL,
-      minScore: minScore
-    });
-
     let dir: Direction = null;
     if (upRight) dir = 'right';
     else if (upLeft) dir = 'left';
     else if (kneeUpR) dir = 'up';
     else if (kneeUpL) dir = 'down';
 
-    console.log('🎮 [PoseDetector] 检测到方向:', dir);
+    if (!dir) {
+      // 重置防抖状态
+      if (globalLastDir !== null) {
+        globalLastDir = null;
+        globalLastTs = 0;
+        console.log('🔄 [PoseDetector] 重置防抖状态');
+      }
+      return null;
+    }
 
-    if (!dir) return null;
-
-    if (dir !== lastDir) {
-      lastDir = dir;
-      lastTs = now;
+    // 防抖逻辑：使用全局状态
+    if (dir !== globalLastDir) {
+      globalLastDir = dir;
+      globalLastTs = now;
       console.log('⏱️ [PoseDetector] 方向变化，开始计时:', { dir, holdMs });
       return null; // 开始计时，等待稳定
     }
-    if (now - lastTs >= holdMs) {
-      console.log('✅ [PoseDetector] 方向稳定，触发:', { dir, holdTime: now - lastTs });
+    
+    if (now - globalLastTs >= holdMs) {
+      console.log('✅ [PoseDetector] 方向稳定，触发:', { dir, holdTime: now - globalLastTs });
       return dir; // 稳定超过阈值，触发方向
     }
-    console.log('⏳ [PoseDetector] 等待稳定:', { dir, elapsed: now - lastTs, needed: holdMs });
+    
+    // 减少等待日志：每10帧打印一次
+    if (debugFrameCount % 10 === 0) {
+      console.log('⏳ [PoseDetector] 等待稳定:', { dir, elapsed: now - globalLastTs, needed: holdMs });
+    }
     return null;
   };
 }
@@ -176,6 +180,7 @@ export async function startEstimateLoop(
   const interval = 1000 / targetFps;
   let last = 0;
   let frameCount = 0;
+  let lastDirectionTime = 0;
 
   console.log('🚀 [PoseDetector] 开始姿态检测循环, targetFps:', targetFps);
 
@@ -190,33 +195,36 @@ export async function startEstimateLoop(
           flipHorizontal: true, // 镜像更符合用户直觉
         });
         
-        if (frameCount % 60 === 0) { // 每60帧打印一次基本信息
+        // 减少状态日志：每120帧打印一次基本信息
+        if (frameCount % 120 === 0) {
           console.log('📊 [PoseDetector] 检测状态:', {
             frameCount,
             posesDetected: poses.length,
-            videoSize: { width: videoEl.videoWidth, height: videoEl.videoHeight }
+            videoSize: { width: videoEl.videoWidth, height: videoEl.videoHeight },
+            lastDirection: now - lastDirectionTime > 5000 ? '超过5秒无动作' : '最近有动作'
           });
         }
         
         if (poses[0]) {
           const pose = poses[0];
-          console.log('👤 [PoseDetector] 检测到姿态, 关键点数量:', pose.keypoints.length);
           
           // 调用关键点绘制回调
           if (onPoseDetected) {
             onPoseDetected(pose);
           }
           
-          // 为当前帧创建一个映射函数（闭包保存lastDir/lastTs）
+          // 使用修复后的映射函数
           const mapper = mapPoseToDirection(pose);
           const dir = mapper(now);
           if (dir) {
+            lastDirectionTime = now;
             console.log('🎯 [PoseDetector] 触发方向控制:', dir);
             onDirection(dir);
           }
         } else {
-          if (frameCount % 120 === 0) { // 每120帧打印一次无检测信息
-            console.log('❌ [PoseDetector] 未检测到姿态');
+          // 减少无检测日志：每300帧打印一次
+          if (frameCount % 300 === 0) {
+            console.log('❌ [PoseDetector] 未检测到姿态 (每300帧)');
           }
         }
       } catch (error) {

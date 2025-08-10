@@ -131,7 +131,8 @@ function App() {
         (direction: Direction) => {
           console.log('🎯 [姿态检测] 检测到方向:', direction);
           
-          if (state.gameEngine) {
+          // 🔧 修复闭包问题：使用gameEngineRef.current而不是state.gameEngine
+          if (gameEngineRef.current) {
             // 映射direction到currentPose
             const newPose = directionToPose(direction);
             console.log('🎯 [姿态检测] 映射到姿态:', newPose);
@@ -179,13 +180,17 @@ function App() {
             }, 1000);
             
             // 如果游戏未开始，则开始游戏
-            if (!state.gameEngine.getState().gameStarted) {
-              state.gameEngine.startGame();
+            if (!gameEngineRef.current.getState().gameStarted) {
+              gameEngineRef.current.startGame();
               setState(prev => ({ ...prev, gameStartTime: Date.now() }));
+              console.log('🎮 [游戏控制] 通过姿态控制启动游戏');
             }
             
             // 设置游戏方向
-            state.gameEngine.setDirection(direction);
+            gameEngineRef.current.setDirection(direction);
+            console.log('🎮 [游戏控制] 设置游戏方向:', direction);
+          } else {
+            console.warn('⚠️ [姿态检测] gameEngineRef.current 为 null，无法控制游戏');
           }
         },
         (pose) => {
@@ -198,7 +203,7 @@ function App() {
     } catch (error) {
       console.error('姿态检测初始化失败:', error);
     }
-  }, [state.gameEngine, directionToPose, poseDrawCallback]);
+  }, [directionToPose, poseDrawCallback]); // 🔧 移除state.gameEngine依赖，避免闭包问题
 
   // 处理游戏结束
   const handleGameOver = useCallback((score: number) => {
@@ -413,7 +418,7 @@ function App() {
                     <CameraLayer
                       onVideoReady={handleVideoReady}
                       onError={(error) => console.error('摄像头错误:', error)}
-                      onPoseDetected={state.poseDrawCallback}
+                      onPoseDetected={poseDrawCallback}
                       className="w-full h-full object-cover"
                     />
                   </div>
