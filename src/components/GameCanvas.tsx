@@ -17,7 +17,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<CanvasRenderer | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const gameLoopRef = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 游戏逻辑更新循环
+  const gameLoop = useCallback(() => {
+    if (gameEngine && gameEngine.getState().gameStarted && !gameEngine.getState().gameOver) {
+      gameEngine.update();
+    }
+  }, [gameEngine]);
 
   // 渲染循环
   const renderLoop = useCallback(() => {
@@ -77,6 +85,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
       renderLoop();
+      
+      // 开始游戏逻辑循环
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
+      }
+      gameLoopRef.current = setInterval(gameLoop, 150); // 每150ms更新一次游戏状态
     }
   }, [gameEngine, renderLoop]);
 
@@ -113,6 +127,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
       }
     };
   }, [initializeCanvas, handleResize]);
